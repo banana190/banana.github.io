@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Otsu Thresholding</title>
+    <title>Erm</title>
 </head>
 <body>
     <input type="file" id="imageUpload" accept="image/*">
     <img id="originalImage" src="testing.jpg" alt="Original Image">
     <canvas id="binaryCanvas"></canvas>
+    <a id="downloadLink" style="display: none;">Download Processed Image</a>
 
     <script>
         function otsu(histogram, total) //copy from wiki
@@ -67,6 +68,20 @@
         data[i + 2] = binaryValue;
         }
 }
+        function generateDownloadLink(data) {
+            var binaryCanvas = document.getElementById('binaryCanvas');
+            var downloadLink = document.getElementById('downloadLink');
+
+            var ctx = binaryCanvas.getContext('2d');
+            ctx.putImageData(data, 0, 0);
+
+            var imageDataURL = binaryCanvas.toDataURL('image/png');
+
+            downloadLink.href = imageDataURL;
+            downloadLink.download = 'processed_image.png';
+            downloadLink.style.display = 'block';
+        }
+
         
         var imageUpload = document.getElementById('imageUpload');
         var originalImage = document.getElementById('originalImage');
@@ -100,7 +115,7 @@
                         var threshold = otsu(histogram, totalPixels);
 
                         binarizeImage(data, threshold);
-
+                        generateDownloadLink(imageData);
                         ctx.putImageData(imageData, 0, 0); //
                     };
                 };
@@ -108,6 +123,7 @@
                 reader.readAsDataURL(file);
             }
         });
+        
 
     </script>
 </body>
