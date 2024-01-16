@@ -78,7 +78,14 @@
             var imageDataURL = binaryCanvas.toDataURL('image/png');
 
             downloadLink.href = imageDataURL;
-            downloadLink.download = 'processed_image.png';
+            downloadLink.onclick = function() {
+                var a = document.createElement('a');
+                a.href = imageDataURL;
+                a.download = 'processed_image.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
             downloadLink.style.display = 'block';
         }
 
