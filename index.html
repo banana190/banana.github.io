@@ -73,6 +73,7 @@
         data[i + 2] = binaryValue;
         }
 }
+        
         function generateDownloadLink(data) {
             var binaryCanvas = document.getElementById('binaryCanvas');
             var downloadLink = document.getElementById('downloadLink');
@@ -93,7 +94,54 @@
             };
             downloadLink.style.display = 'block';
         }
+        
+        function sharpener(data,imageWidth,imageHeight,threshold) {
+            for (var i = 0; i < data.length; i += 4) 
+            {
+                var grayValue = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                data[i] = grayValue;
+                data[i + 1] = grayValue;
+                data[i + 2] = grayValue;
+            }
+            var originalData = new Uint8ClampedArray(data);
+            for (var i = 0; i < data.length; i+= 4)
+            {
+                var filter08 = 0;
+                var filter04 = 0;
+                var filter05 = originalData[i];
+                var filter06 = 0;
+                var filter02 = 0;
+                if(data[i-imageWidth*4] != null)
+                {
+                    filter08 = -originalData[i-imageWidth*4];
+                }
+                if(data[i-4] != null)
+                {
+                    filter04 = -originalData[i-4]
+                }
+                if(data[i+4] != null)
+                {
+                    filter06 = -originalData[i+4]
+                }
+                if(data[i+imageWidth*4] != null)
+                {
+                    filter02 = -originalData[i+imageWidth*4];
+                }
+                
+                filtered = filter05 *5 + filter02 +filter04 + filter06 +filter08;
+                data[i] = filtered;
+                data[i + 1] = filtered;
+                data[i + 2] = filtered;
+            }
+            for (var i = 0; i < data.length; i += 4) 
+            {
+                var binaryValue = (data[i] < threshold) ? 0 : 255;
 
+                data[i] = binaryValue;
+                data[i + 1] = binaryValue;
+                data[i + 2] = binaryValue;
+            }
+        }
         
         var imageUpload = document.getElementById('imageUpload');
         var originalImage = document.getElementById('originalImage');
@@ -125,8 +173,8 @@
                         var histogram = calculateHistogram(data);
 
                         var threshold = otsu(histogram, totalPixels);
-
-                        binarizeImage(data, threshold);
+                        sharpener(data, imageWidth, imageHeight,threshold)
+                        // binarizeImage(data, threshold);
                         generateDownloadLink(imageData);
                         ctx.putImageData(imageData, 0, 0); //
                         const img    = binaryCanvas.toDataURL('image/png')
