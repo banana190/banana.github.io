@@ -67,7 +67,7 @@
         data[i + 1] = binaryValue;
         data[i + 2] = binaryValue;
         }
-}
+        }
         function generateDownloadLink(data) {
             var binaryCanvas = document.getElementById('binaryCanvas');
             var downloadLink = document.getElementById('downloadLink');
@@ -78,15 +78,15 @@
             var imageDataURL = binaryCanvas.toDataURL('image/png');
 
             downloadLink.href = imageDataURL;
-            downloadLink.onclick = function() {
-                var a = document.createElement('a');
-                a.href = imageDataURL;
-                a.download = 'processed_image.png';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
+            downloadLink.textContent = 'Download Processed Image';
             downloadLink.style.display = 'block';
+        }
+
+        function displayProcessedImage(data) {
+            var binaryCanvas = document.getElementById('binaryCanvas');
+            var ctx = binaryCanvas.getContext('2d');
+            
+            ctx.putImageData(data, 0, 0);
         }
 
         
@@ -123,6 +123,7 @@
 
                         binarizeImage(data, threshold);
                         generateDownloadLink(imageData);
+                        displayProcessedImage(imageData);
                         ctx.putImageData(imageData, 0, 0); //
                     };
                 };
