@@ -1,18 +1,138 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Erm</title>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yiyi_testing</title>
     <style>
-      #binaryCanvas {
-        display: none;
-      }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #2c2f33; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: auto; }
+        h1 { text-align: center; color: #7289da; font-size: 24px; margin-bottom: 20px; }
+        .wheel-card { background: #23272a; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #7289da; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .wheel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .wheel-header h3 { margin: 0; font-size: 18px; color: #99aab5; }
+        .cycle-input { display: flex; align-items: center; gap: 5px; }
+        .cycle-input input { width: 60px; }
+        
+        .action-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #2c2f33; padding: 8px; border-radius: 5px; }
+        .action-row span { font-weight: bold; color: #99aab5; width: 30px; text-align: center; }
+        input { padding: 6px; border-radius: 4px; border: 1px solid #555; background: #40444b; color: #fff; font-size: 14px; outline: none; transition: border 0.2s; }
+        input:focus { border-color: #7289da; }
+        
+        .key-input { flex: 1; font-family: monospace; font-size: 16px; font-weight: bold; color: #faa61a; }
+        input[type="number"] { width: 70px; text-align: right; }
+        
+        .status-bar { font-size: 12px; text-align: right; margin-top: 5px; font-weight: bold; }
+        .btn-save { width: 100%; padding: 15px; background-color: #43b581; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn-save:hover { background-color: #3ca374; }
     </style>
-  </head>
-  <body>
-    <input type="file" id="imageUpload" accept="image/*" />
-    <img id="originalImage" src="testing.jpg" alt="Original Image" />
-    <canvas id="binaryCanvas"></canvas>
-    <a id="downloadLink" style="display: none">Download Processed Image</a>
-    <script src="util.js"></script>
-  </body>
+</head>
+<body>
+
+<div class="container" id="app">
+    <h1>工作台</h1>
+    <!-- dynamic generating -->
+</div>
+
+<script>
+    const app = document.getElementById('app');
+
+    // 5 time wheel
+    for (let i = 1; i <= 5; i++) {
+        const wheelHTML = `
+            <div class="wheel-card" id="wheel_${i}">
+                <div class="wheel-header">
+                    <h3>時間輪 ${i}</h3>
+                    <div class="cycle-input">
+                        循環 (s): <input type="number" id="s_${i}" value="60" min="1" onchange="updateWheel(${i})">
+                    </div>
+                </div>
+                ${[1, 2, 3].map(k => `
+                    <div class="action-row">
+                        <span>順序${k}</span>
+                        <input type="text" id="key_${i}_${k}" class="key-input" placeholder="e.g. F1, CTRL, A(一次輸入一個)" 
+                               oninput="cleanKeyInput(this)">
+                        <input type="number" id="k_${i}_${k}" value="0" min="0" step="0.1" placeholder="等待(s)" 
+                               oninput="handleKChange(event, ${i})"> s
+                    </div>
+                `).join('')}
+                <div class="status-bar" id="status_${i}">剩餘閒置時間: 60.0 s</div>
+            </div>
+        `;
+        app.insertAdjacentHTML('beforeend', wheelHTML);
+    }
+
+    app.insertAdjacentHTML('beforeend', '<button class="btn-save" onclick="saveConfig()">儲存設定至硬體</button>');
+
+
+    function cleanKeyInput(element) {
+        element.value = element.value.toUpperCase().replace(/\s/g, '');
+    }
+
+
+    function handleKChange(event, wId) {
+        let s = parseFloat(document.getElementById(`s_${wId}`).value) || 0;
+        let inputs = [1, 2, 3].map(k => document.getElementById(`k_${wId}_${k}`));
+        let target = event.target;
+        
+        let otherSum = 0;
+        inputs.forEach(input => {
+            if (input !== target) otherSum += (parseFloat(input.value) || 0);
+        });
+
+        let maxAllowed = Math.max(0, s - otherSum);
+        let currentVal = parseFloat(target.value) || 0;
+        
+        if (currentVal > maxAllowed) {
+            target.value = maxAllowed.toFixed(1);
+        }
+        
+        updateWheel(wId);
+    }
+
+
+    function updateWheel(wId) {
+        let s = parseFloat(document.getElementById(`s_${wId}`).value) || 0;
+        let sumK = 0;
+        
+        [1, 2, 3].forEach(k => {
+            let val = parseFloat(document.getElementById(`k_${wId}_${k}`).value) || 0;
+            if (sumK + val > s) {
+                val = Math.max(0, s - sumK);
+                document.getElementById(`k_${wId}_${k}`).value = val.toFixed(1);
+            }
+            sumK += val;
+        });
+
+        let remainder = (s - sumK).toFixed(1);
+        let statusEl = document.getElementById(`status_${wId}`);
+        statusEl.innerText = `剩餘閒置時間: ${remainder} s`;
+        statusEl.style.color = remainder == 0 ? "#f04747" : "#43b581";
+    }
+
+
+    function saveConfig() {
+        let configData = [];
+        for (let i = 1; i <= 5; i++) {
+            let s = document.getElementById(`s_${i}`).value;
+            let actions = [];
+            for (let k = 1; k <= 3; k++) {
+                let keyVal = document.getElementById(`key_${i}_${k}`).value;
+                let waitVal = document.getElementById(`k_${i}_${k}`).value;
+                // 只有當按鍵有輸入內容時才加入動作清單
+                if (keyVal !== "") {
+                    actions.push({ key: keyVal, wait: waitVal });
+                }
+            }
+            // 只有當循環時間 > 0 且有設定動作時，才算有效的時間輪
+            if (s > 0 && actions.length > 0) {
+                configData.push({ wheel: i, cycle: s, actions: actions });
+            }
+        }
+        
+        console.log(JSON.stringify(configData));
+        alert("設定已產生！請打開開發者工具查看乾淨的 JSON 陣列。");
+    }
+</script>
+</body>
 </html>
